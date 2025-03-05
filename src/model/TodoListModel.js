@@ -1,4 +1,6 @@
 import { EventEmitter } from "../EventEmitter.js";
+/* utils */
+import { searchResult } from '../common.js';
 
 export class TodoListModel extends EventEmitter {
     #items;
@@ -26,6 +28,10 @@ export class TodoListModel extends EventEmitter {
         return this.#items;
     }
 
+    getSearchedTodoItems() {
+        return this.searchedItems;
+    }
+
     /**
      * TodoListの状態が更新されたときに呼び出されるリスナー関数を登録する
      * @param {Function} listener
@@ -42,25 +48,26 @@ export class TodoListModel extends EventEmitter {
     }
 
     /**
+   * 検索された時に呼び出されるリスナー関数を登録する
+   * @param {Function} listener
+   */
+    onSearch(listener) {
+        this.addEventListener('search', listener);
+    }
+
+    /**
+   * 検索された時に呼ぶ。
+   */
+    emitSearch() {
+        this.emit('search');
+    }
+
+    /**
      * TodoItemを追加する
      * @param {TodoItemModel} todoItem
      */
     addTodo(todoItem) {
         this.#items.push(todoItem);
-        this.emitChange();
-    }
-
-    /**
-     * 指定したidのTodoItemのcompletedを更新する
-     * @param {{ id:number, completed: boolean }}
-     */
-    updateTodo({ id, completed }) {
-        // `id`が一致するTodoItemを見つけ、あるなら完了状態の値を更新する
-        const todoItem = this.#items.find(todo => todo.id === id);
-        if (!todoItem) {
-            return;
-        }
-        todoItem.completed = completed;
         this.emitChange();
     }
 
@@ -74,5 +81,18 @@ export class TodoListModel extends EventEmitter {
             return todo.id !== id;
         });
         this.emitChange();
+    }
+
+    /**
+   * 検索に一致する
+   * @param { title: string }
+   */
+    searchTodo({ title }) {
+        // 正規表現を用いて、部分一致したTodoのみ表示
+        this.searchedItems = this.items.filter((todo) => {
+            return searchResult(title, todo.title);
+        });
+
+        this.emitSearch();
     }
 }
